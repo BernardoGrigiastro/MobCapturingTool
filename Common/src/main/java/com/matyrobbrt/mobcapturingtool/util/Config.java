@@ -1,6 +1,5 @@
 package com.matyrobbrt.mobcapturingtool.util;
 
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
@@ -34,7 +33,6 @@ public class Config {
         return LoaderData.INSTANCE.getConfigDir().resolve(Constants.MOD_ID + ".json");
     }
 
-    @CanIgnoreReturnValue
     public static boolean load() {
         try {
             final var path = getConfigPath();

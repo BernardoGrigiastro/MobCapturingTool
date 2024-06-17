@@ -4,6 +4,7 @@ import com.matyrobbrt.mobcapturingtool.item.CapturingToolItem;
 import com.matyrobbrt.mobcapturingtool.item.MCTItems;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import net.minecraft.client.color.item.ItemColor;
+import net.minecraft.util.FastColor;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.level.ItemLike;
 
@@ -16,10 +17,10 @@ public class MCTClientInit {
                 if (entity != null) {
                     final var egg = SpawnEggItem.byId(entity);
                     if (egg != null)
-                        return egg.getColor(tint - 1);
+                        return FastColor.ARGB32.opaque(egg.getColor(tint - 1));
                 }
             }
-            return 0xFFFFFF;
+            return -1;
         }, MCTItems.CAPTURING_TOOL.get());
     }
 

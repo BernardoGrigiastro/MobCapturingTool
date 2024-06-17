@@ -5,14 +5,12 @@ import com.matyrobbrt.mobcapturingtool.util.Constants;
 import net.minecraft.ChatFormatting;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.BlockSource;
 import net.minecraft.core.Direction;
+import net.minecraft.core.dispenser.BlockSource;
 import net.minecraft.core.dispenser.DispenseItemBehavior;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -37,7 +35,6 @@ import java.util.function.BooleanSupplier;
 @MethodsReturnNonnullByDefault
 public class CapturingToolItem extends Item {
     public static final String CAPTURED_ENTITY_TAG = "CapturedEntity";
-    public static final String ENTITY_TYPE_TAG = "EntityType";
     public static final List<String> TAGS_TO_REMOVE = List.of(
             "SleepingX", "SleepingY", "SleepingZ" // We need to remove sleeping tags because they case issues
     );
@@ -69,7 +66,7 @@ public class CapturingToolItem extends Item {
     public static boolean capture(ItemStack stack, LivingEntity target, @Nullable Player player) {
         if (target.level().isClientSide || getEntityType(stack) != null)
             return false;
-        if (target instanceof Player || !target.canChangeDimensions() || !target.isAlive())
+        if (target instanceof Player || (player != null && !target.canChangeDimensions(target.level(), player.level())) || !target.isAlive())
             return false;
         if (isBlacklisted(stack, target, player)) {
             if (player != null) {
@@ -80,10 +77,10 @@ public class CapturingToolItem extends Item {
             return false;
         }
         final var nbt = new CompoundTag();
-        nbt.putString(ENTITY_TYPE_TAG, EntityType.getKey(target.getType()).toString());
         target.saveWithoutId(nbt);
         TAGS_TO_REMOVE.forEach(nbt::remove);
-        stack.getOrCreateTag().put(CAPTURED_ENTITY_TAG, nbt);
+        stack.set(MCTItems.CAPTURED_ENTITY_TYPE.get(), EntityType.getKey(target.getType()));
+        stack.set(MCTItems.CAPTURED_ENTITY.get(), nbt);
         target.remove(Entity.RemovalReason.KILLED);
         return true;
     }
@@ -95,11 +92,13 @@ public class CapturingToolItem extends Item {
         if (entityType == null)
             return false;
         final var entity = entityType.create(level);
-        if (entity != null) {
-            entity.load(stack.getOrCreateTagElement(CAPTURED_ENTITY_TAG));
+        var tag = stack.get(MCTItems.CAPTURED_ENTITY.get());
+        if (entity != null && tag != null) {
+            entity.load(tag);
             BlockPos blockPos = pos.relative(facing);
             entity.absMoveTo(blockPos.getX() + 0.5, blockPos.getY(), blockPos.getZ() + 0.5, 0, 0);
-            stack.getOrCreateTag().remove(CAPTURED_ENTITY_TAG);
+            stack.remove(MCTItems.CAPTURED_ENTITY.get());
+            stack.remove(MCTItems.CAPTURED_ENTITY_TYPE.get());
             level.addFreshEntity(entity);
             return true;
         }
@@ -116,10 +115,10 @@ public class CapturingToolItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltipComponents, TooltipFlag isAdvanced) {
+    public void appendHoverText(ItemStack stack, @Nullable Item.TooltipContext level, List<Component> tooltipComponents, TooltipFlag isAdvanced) {
         final var entity = getEntityType(stack);
         if (entity != null) {
-            final var entityTag = stack.getOrCreateTagElement(CAPTURED_ENTITY_TAG);
+            final var entityTag = stack.get(MCTItems.CAPTURED_ENTITY.get());
             tooltipComponents.add(Constants.getTranslation("captured_entity", Component.literal(BuiltInRegistries.ENTITY_TYPE.getKey(entity).toString())
                     .withStyle(ChatFormatting.AQUA)));
             tooltipComponents.add(Constants.getTranslation("captured_entity.health", Component.literal(String.valueOf(entityTag.getDouble("Health")))
@@ -143,15 +142,13 @@ public class CapturingToolItem extends Item {
 
     @Nullable
     public static EntityType<?> getEntityType(ItemStack stack) {
-        if (stack.getOrCreateTag().contains(CAPTURED_ENTITY_TAG, Tag.TAG_COMPOUND)) {
-            final var typeStr = stack.getOrCreateTagElement(CAPTURED_ENTITY_TAG).getString(ENTITY_TYPE_TAG);
-            final var rl = new ResourceLocation(typeStr);
-            return BuiltInRegistries.ENTITY_TYPE.getOptional(rl).orElse(null);
+        if (stack.has(MCTItems.CAPTURED_ENTITY_TYPE.get())) {
+            final var typeStr = stack.get(MCTItems.CAPTURED_ENTITY_TYPE.get());
+            return BuiltInRegistries.ENTITY_TYPE.getOptional(typeStr).orElse(null);
         }
         return null;
     }
 
-    @SuppressWarnings("ClassCanBeRecord")
     public static final class DispenseBehaviour implements DispenseItemBehavior {
 
         private final BooleanSupplier condition;
@@ -165,18 +162,17 @@ public class CapturingToolItem extends Item {
             if (!condition.getAsBoolean())
                 return stack;
 
-            final var tag = stack.getOrCreateTag();
-            final var facing = source.getBlockState().getValue(DispenserBlock.FACING);
-            final var targetPos = source.getPos().relative(facing);
-            if (tag.contains(CAPTURED_ENTITY_TAG, Tag.TAG_COMPOUND)) {
+            final var facing = source.state().getValue(DispenserBlock.FACING);
+            final var targetPos = source.pos().relative(facing);
+            if (stack.has(MCTItems.CAPTURED_ENTITY.get())) {
                 release(
                         targetPos,
                         facing,
-                        source.getLevel(),
+                        source.level(),
                         stack
                 );
             } else {
-                List<LivingEntity> list = source.getLevel().getEntitiesOfClass(LivingEntity.class,
+                List<LivingEntity> list = source.level().getEntitiesOfClass(LivingEntity.class,
                         new AABB(targetPos), (livingEntity) -> livingEntity.isAlive() && !(livingEntity instanceof Player));
                 //noinspection ResultOfMethodCallIgnored
                 list.stream().anyMatch(en -> capture(stack, en));

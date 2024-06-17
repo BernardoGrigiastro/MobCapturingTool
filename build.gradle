@@ -2,6 +2,7 @@ import net.darkhax.curseforgegradle.TaskPublishCurseForge
 import com.matyrobbrt.mobcapturingtool.gradle.*
 
 plugins {
+    id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.8"
     id 'net.darkhax.curseforgegradle' version '1.0.11'
     id 'com.matyrobbrt.mc.registrationutils' version "$reg_version"
     id 'com.modrinth.minotaur' version "2.+" apply false
@@ -12,7 +13,7 @@ registrationUtils {
     group 'com.matyrobbrt.mobcapturingtool.reg'
     projects {
         Fabric {}
-        Forge {}
+        NeoForge {}
         Common {}
     }
 }
@@ -31,13 +32,13 @@ static ProjectInfo info(String name, String jarTask = 'jar') {
 }
 
 final var project2Loader = Map.of(
-        findProject(':Forge'), info('Forge'),
+        findProject(':NeoForge'), info('NeoForge'),
         findProject(':Fabric'), info('Fabric', 'remapJar')
 )
 
 project.tasks.register('multiloaderJar', MultiLoaderJarTask) {
     group = 'build'
-    forgeJar.set(project.project(':Forge').tasks.named('jar', Jar).flatMap { it.archiveFile })
+    forgeJar.set(project.project(':NeoForge').tasks.named('jar', Jar).flatMap { it.archiveFile })
     fabricJar.set(project.project(':Fabric').tasks.named('remapJar', org.gradle.jvm.tasks.Jar).flatMap { it.archiveFile })
     archiveGroup.set('com.matyrobbrt.mobcapturingtool')
     archiveIdentifier.set('mobcapturingtool')
@@ -94,7 +95,7 @@ tasks.register('publishModrinth') {
 subprojects {
     apply plugin: 'java'
 
-    java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+    java.toolchain.languageVersion = JavaLanguageVersion.of(21)
     java.withSourcesJar()
     java.withJavadocJar()
 
@@ -116,29 +117,9 @@ subprojects {
         }
     }
 
-    repositories {
-        mavenCentral()
-        maven {
-            name = 'Sponge / Mixin'
-            url = 'https://repo.spongepowered.org/repository/maven-public/'
-        }
-        maven {
-            name = 'BlameJared Maven (CrT / Bookshelf)'
-            url = 'https://maven.blamejared.com'
-        }
-        maven {
-            name = 'ParchmentMC'
-            url = 'https://maven.parchmentmc.org'
-        }
-        maven {
-            name 'Quilt (Release)'
-            url 'https://maven.quiltmc.org/repository/release/'
-        }
-    }
-
     tasks.withType(JavaCompile).configureEach {
         it.options.encoding = 'UTF-8'
-        it.options.release.set(17)
+        it.options.release.set(21)
     }
 
     // Disables Gradle's custom module metadata from being published to maven. The

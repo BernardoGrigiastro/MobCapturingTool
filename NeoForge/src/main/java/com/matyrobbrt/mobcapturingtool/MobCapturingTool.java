@@ -3,21 +3,19 @@ package com.matyrobbrt.mobcapturingtool;
 import com.matyrobbrt.mobcapturingtool.item.MCTItems;
 import com.matyrobbrt.mobcapturingtool.util.Constants;
 import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 @Mod(Constants.MOD_ID)
 public class MobCapturingTool {
     
-    public MobCapturingTool() {
+    public MobCapturingTool(IEventBus modBus) {
         MCTInit.modInit();
 
-        final IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         modBus.addListener((final FMLCommonSetupEvent event) -> MCTInit.commonSetup());
         modBus.addListener((final BuildCreativeModeTabContentsEvent event) -> {
             if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
@@ -25,7 +23,7 @@ public class MobCapturingTool {
             }
         });
 
-        MinecraftForge.EVENT_BUS.addListener(this::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(this::onEntityInteract);
     }
 
     private void onEntityInteract(final PlayerInteractEvent.EntityInteract event) {

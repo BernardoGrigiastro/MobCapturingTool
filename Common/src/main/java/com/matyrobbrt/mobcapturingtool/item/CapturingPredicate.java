@@ -1,6 +1,6 @@
 package com.matyrobbrt.mobcapturingtool.item;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -14,5 +14,5 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public interface CapturingPredicate {
     boolean canPickup(ItemStack stack, LivingEntity target, @Nullable Player player);
 
-    Codec<? extends CapturingPredicate> getCodec();
+    MapCodec<? extends CapturingPredicate> getCodec();
 }
