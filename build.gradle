@@ -59,7 +59,7 @@ tasks.register('publishCurseForge', TaskPublishCurseForge) {
         modFile.changelog = rootProject.file('changelog.txt')
         modFile.releaseType = findProperty('release_type')
         modFile.displayName = "$mod_name-${loader.getName()}-$minecraft_version-$version" as String
-        modFile.addJavaVersion 'Java 17'
+        modFile.addJavaVersion 'Java 21'
         modFile.addModLoader loader.getName()
         modFile.addGameVersion "$minecraft_version"
         dependsOn(tsk)
